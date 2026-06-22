@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { signOut } from "../lib/useAuth";
 import { getDogListings, deleteDogListing } from "../lib/dogsApi";
+import { getEnquiries } from "../lib/enquiriesApi";
 import AddDogForm from "./AddDogForm";
+import EnquiriesPanel from "./EnquiriesPanel";
 import { C, display, sans } from "../lib/theme";
 
 export default function Dashboard({ session }) {
+  const [section, setSection] = useState("dogs"); // "dogs" | "enquiries"
   const [view, setView] = useState("list"); // "list" | "form"
   const [dogs, setDogs] = useState([]);
   const [editingDog, setEditingDog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [newEnquiryCount, setNewEnquiryCount] = useState(0);
+
+  async function loadEnquiryCount() {
+    try {
+      const data = await getEnquiries();
+      setNewEnquiryCount(data.filter((e) => e.status === "new").length);
+    } catch {
+      // non-fatal: the badge just won't show
+    }
+  }
 
   async function loadDogs() {
     try {
@@ -25,6 +38,7 @@ export default function Dashboard({ session }) {
 
   useEffect(() => {
     loadDogs();
+    loadEnquiryCount();
   }, []);
 
   async function handleDelete(id, name) {
@@ -64,8 +78,22 @@ export default function Dashboard({ session }) {
         </div>
       </header>
 
+      <div style={{ background: C.white, borderBottom: `1px solid ${C.line}` }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px", display: "flex", gap: 4 }}>
+          <button onClick={() => setSection("dogs")} style={{ ...sectionTab, ...(section === "dogs" ? sectionTabOn : {}) }}>
+            Dogs
+          </button>
+          <button onClick={() => { setSection("enquiries"); loadEnquiryCount(); }} style={{ ...sectionTab, ...(section === "enquiries" ? sectionTabOn : {}) }}>
+            Enquiries
+            {newEnquiryCount > 0 && <span style={countBadge}>{newEnquiryCount}</span>}
+          </button>
+        </div>
+      </div>
+
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 20px 80px" }}>
-        {view === "list" ? (
+        {section === "enquiries" ? (
+          <EnquiriesPanel />
+        ) : view === "list" ? (
           <div style={panel}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
               <div>
@@ -125,6 +153,9 @@ export default function Dashboard({ session }) {
 }
 
 const header = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: C.white, borderBottom: `1px solid ${C.line}` };
+const sectionTab = { position: "relative", padding: "14px 18px", fontFamily: sans, fontSize: 15, fontWeight: 600, color: C.inkSoft, background: "none", border: "none", borderBottom: "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 };
+const sectionTabOn = { color: C.forest, borderBottomColor: C.forest };
+const countBadge = { fontSize: 11, fontWeight: 700, color: C.white, background: C.amberDeep, padding: "1px 7px", borderRadius: 999, lineHeight: 1.6 };
 const signOutBtn = { padding: "8px 16px", fontFamily: sans, fontSize: 14, fontWeight: 500, color: C.ink, background: C.white, border: `1px solid ${C.line}`, borderRadius: 999, cursor: "pointer" };
 const panel = { background: C.white, border: `1px solid ${C.line}`, borderRadius: 24, padding: "32px 28px", boxShadow: "0 24px 60px -36px rgba(31,74,40,.35)" };
 const addBtn = { padding: "10px 20px", fontFamily: sans, fontSize: 14, fontWeight: 600, color: C.white, background: C.forest, border: "none", borderRadius: 999, cursor: "pointer" };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getDogListings } from "./lib/dogsApi";
+import { submitEnquiry } from "./lib/enquiriesApi";
 
 // ---- Brand tokens ----
 const C = {
@@ -14,6 +15,7 @@ const C = {
   rust: "#9a5a2b",
   line: "#e0d8c6",
   white: "#ffffff",
+  danger: "#b3261e",
 };
 
 const display = "'Fraunces', Georgia, serif";
@@ -422,8 +424,78 @@ function AdoptPage({ go, q, dogs, loading }) {
   );
 }
 
+function EnquiryForm({ dog, onClose }) {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", honeypot: "" });
+  const [state, setState] = useState({ type: "idle", message: "" });
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setState({ type: "idle", message: "" });
+    if (!form.name.trim() || !form.email.trim()) {
+      setState({ type: "error", message: "Please enter at least your name and email." });
+      return;
+    }
+    setState({ type: "sending", message: "" });
+    try {
+      await submitEnquiry({ dogId: dog.id, dogName: dog.name, ...form });
+      setState({ type: "success", message: "" });
+    } catch (err) {
+      setState({ type: "error", message: err.message });
+    }
+  }
+
+  if (state.type === "success") {
+    return (
+      <div style={{ marginTop: 28, padding: 24, borderRadius: 18, background: "#eef4ee", border: `1px solid ${C.forest}` }}>
+        <h3 style={{ fontFamily: display, fontSize: 22, fontWeight: 600, color: C.forestDeep, margin: 0 }}>Thank you! 🐾</h3>
+        <p style={{ fontFamily: sans, fontSize: 15, lineHeight: 1.6, color: C.ink, margin: "8px 0 0" }}>
+          Your enquiry about {dog.name} has been sent to the REAN team. A volunteer will be in touch by email soon — please do check your spam folder just in case.
+        </p>
+      </div>
+    );
+  }
+
+  const fieldStyle = { width: "100%", boxSizing: "border-box", padding: "11px 13px", fontFamily: sans, fontSize: 15, color: C.ink, background: "#fff", border: `1px solid ${C.line}`, borderRadius: 12, outline: "none" };
+  const lbl = { display: "block", fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 6 };
+  const sending = state.type === "sending";
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: 28, padding: 24, borderRadius: 18, background: C.paperDeep, border: `1px solid ${C.line}` }} noValidate>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ fontFamily: display, fontSize: 22, fontWeight: 600, color: C.ink, margin: 0 }}>Enquire about {dog.name}</h3>
+        <button type="button" onClick={onClose} aria-label="Close" style={{ ...btnReset, fontSize: 22, color: C.inkSoft, lineHeight: 1 }}>×</button>
+      </div>
+      <p style={{ fontFamily: sans, fontSize: 14, color: C.inkSoft, margin: "0 0 18px", lineHeight: 1.5 }}>
+        Leave your details and a short message. A REAN volunteer will email you back to talk through next steps — there's no commitment in saying hello.
+      </p>
+
+      <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }} className="rean-enq-row">
+          <div><label style={lbl}>Your name *</label><input style={fieldStyle} value={form.name} onChange={set("name")} /></div>
+          <div><label style={lbl}>Phone (optional)</label><input style={fieldStyle} value={form.phone} onChange={set("phone")} /></div>
+        </div>
+        <div><label style={lbl}>Email *</label><input type="email" style={fieldStyle} value={form.email} onChange={set("email")} /></div>
+        <div><label style={lbl}>Message</label><textarea style={{ ...fieldStyle, minHeight: 100, resize: "vertical", lineHeight: 1.5 }} value={form.message} onChange={set("message")} placeholder={`Tell us a little about your home and why ${dog.name} caught your eye…`} /></div>
+      </div>
+
+      {/* Honeypot: hidden from people, visible to bots. */}
+      <div style={{ position: "absolute", left: "-9999px" }} aria-hidden="true">
+        <label>Leave this field empty<input tabIndex={-1} autoComplete="off" value={form.honeypot} onChange={set("honeypot")} /></label>
+      </div>
+
+      {state.type === "error" && <p style={{ fontFamily: sans, fontSize: 14, color: C.danger, margin: "14px 0 0" }}>{state.message}</p>}
+
+      <button type="submit" disabled={sending} style={{ ...ctaPrimary, marginTop: 18, opacity: sending ? 0.7 : 1 }}>
+        {sending ? "Sending…" : "Send enquiry"}
+      </button>
+    </form>
+  );
+}
+
 function DogProfile({ go, id, dogs }) {
   const dog = dogs.find((d) => d.id === id);
+  const [showEnquiry, setShowEnquiry] = useState(false);
   if (!dog) return <p style={{ padding: 40 }}>Finding profile records...</p>;
 
   const traits = [];
@@ -461,7 +533,10 @@ function DogProfile({ go, id, dogs }) {
             {traits.map((t) => <span key={t} style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.forestDeep, background: C.paperDeep, border: `1px solid ${C.line}`, padding: "6px 14px", borderRadius: 999 }}>{t}</span>)}
           </div>
           <p style={{ fontFamily: sans, fontSize: 17, lineHeight: 1.7, color: C.ink, marginTop: 24, whiteSpace: "pre-wrap" }}>{dog.bio}</p>
-          <button onClick={() => go("contact")} style={{ ...ctaPrimary, marginTop: 28 }}>Apply to adopt {dog.name}</button>
+          {!showEnquiry && (
+            <button onClick={() => setShowEnquiry(true)} style={{ ...ctaPrimary, marginTop: 28 }}>Apply to adopt {dog.name}</button>
+          )}
+          {showEnquiry && <EnquiryForm dog={dog} onClose={() => setShowEnquiry(false)} />}
         </div>
       </div>
     </main>
@@ -587,6 +662,7 @@ export default function App() {
           .rean-money { grid-template-columns: 1fr; gap: 32px; }
           .rean-footer { grid-template-columns: 1fr 1fr; gap: 32px; }
           .rean-profile { grid-template-columns: 1fr !important; }
+          .rean-enq-row { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 560px) { .rean-footer { grid-template-columns: 1fr; } }
       `}</style>
