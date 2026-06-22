@@ -224,12 +224,12 @@ function Home({ go, dogs, loading }) {
   const hueGrid = [28, 46, 18, 38];
   return (
     <main>
-      <section style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 20px 24px" }}>
+      <section style={{ maxWidth: 1200, margin: "0 auto", padding: "12px 20px 24px" }}>
         <div className="rean-hero-grid">
           <div>
             <span style={pill}><span style={{ width: 8, height: 8, borderRadius: 999, background: C.amber }} /> Rescuing dogs from Romania since 2013</span>
             <h1 style={{ fontFamily: display, fontWeight: 600, lineHeight: 1.04, letterSpacing: "-0.02em", color: C.ink, fontSize: "clamp(2.6rem, 6vw, 4rem)", margin: "24px 0 0" }}>
-              Every dog deserves<br /><span style={{ fontStyle: "italic", color: C.forest }}>a doorstep</span> to<br />call home.
+              We bring them to safety.<br /><span style={{ fontStyle: "italic", color: C.forest }}>You bring them home.</span>
             </h1>
             <p style={{ fontFamily: sans, fontSize: 18, lineHeight: 1.6, color: C.inkSoft, maxWidth: 440, marginTop: 24 }}>
               We rescue stray dogs from the streets and shelters of Romania, care for them, and bring them to loving homes across the UK.
@@ -307,8 +307,11 @@ function Home({ go, dogs, loading }) {
         </div>
       </section>
 
-      <section style={{ background: C.forest, color: "#fff" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 20px" }}>
+      <section style={{ position: "relative", background: C.forest, color: "#fff", overflow: "hidden" }}>
+        {/* Faded sanctuary photo behind the content. The green overlay keeps text fully legible. */}
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, backgroundImage: "url(/money-bg.jpg)", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.18 }} />
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: `linear-gradient(to right, ${C.forest} 0%, rgba(47,107,58,0.92) 45%, rgba(47,107,58,0.80) 100%)` }} />
+        <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto", padding: "80px 20px" }}>
           <div className="rean-money">
             <div>
               <p style={{ ...eyebrow, color: C.amber }}>Where your money goes</p>
