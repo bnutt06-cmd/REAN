@@ -67,19 +67,13 @@ function DogPortrait({ hue = 30, style }) {
 // ---- REAN logo mark (recreated as inline SVG) ----
 function Logo({ size = 44 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" aria-label="REAN logo">
-      <circle cx="50" cy="50" r="48" fill={C.amber} />
-      <circle cx="50" cy="50" r="34" fill={C.white} />
-      <g fill={C.rust}>
-        <ellipse cx="50" cy="58" rx="20" ry="17" fill={C.white} stroke={C.rust} strokeWidth="2" />
-        <path d="M34 44 Q28 30 38 36 Q42 39 40 47 Z" />
-        <path d="M66 44 Q72 30 62 36 Q58 39 60 47 Z" />
-        <circle cx="43" cy="54" r="3" />
-        <circle cx="57" cy="54" r="3" />
-        <ellipse cx="50" cy="63" rx="4" ry="3" />
-      </g>
-      <text x="50" y="90" textAnchor="middle" fontSize="11" fontWeight="700" fill={C.forest} fontFamily={sans}>REAN</text>
-    </svg>
+    <img
+      src="/rean-logo.png"
+      width={size}
+      height={size}
+      alt="REAN — Rescuing European Animals in Need"
+      style={{ display: "block", width: size, height: size, objectFit: "contain" }}
+    />
   );
 }
 
@@ -129,16 +123,13 @@ function Header({ go, current }) {
         transition: "all .3s",
       }}>
         <nav style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "12px 20px" }}>
-          <button onClick={() => nav("home")} style={{ ...btnReset, display: "flex", alignItems: "center", gap: 12 }}>
-            <Logo size={44} />
-            <span style={{ textAlign: "left", lineHeight: 1 }}>
-              <span style={{ fontFamily: display, fontSize: 21, fontWeight: 600, color: C.ink, display: "block" }}>REAN</span>
-              <span style={{ fontFamily: sans, fontSize: 9.5, letterSpacing: ".16em", textTransform: "uppercase", color: C.inkSoft, marginTop: 2, display: "block" }}>Rescuing European Animals in Need</span>
-            </span>
+          <button onClick={() => nav("home")} style={{ ...btnReset, display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+            <Logo size={52} />
+            <span style={{ fontFamily: display, fontSize: 24, fontWeight: 600, color: C.ink, letterSpacing: "-0.01em" }}>REAN</span>
           </button>
 
           {/* desktop nav */}
-          <div className="rean-desktop" style={{ alignItems: "center", gap: 26 }}>
+          <div className="rean-desktop" style={{ alignItems: "center", gap: 22 }}>
             {NAV.map((item) => item.children ? (
               <div key={item.label} style={{ position: "relative" }} onMouseEnter={() => setHover(item.label)} onMouseLeave={() => setHover(null)}>
                 <button onClick={() => nav(item.page)} style={{ ...navLink, display: "flex", alignItems: "center", gap: 4 }}>
@@ -168,11 +159,11 @@ function Header({ go, current }) {
             ))}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button className="rean-desktop" onClick={() => nav("signin")} style={{ ...btnReset, alignItems: "center", gap: 8, border: `1px solid ${C.line}`, background: "#fff", padding: "8px 16px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 500, color: C.ink }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <button className="rean-desktop" onClick={() => nav("signin")} style={{ ...btnReset, alignItems: "center", gap: 8, border: `1px solid ${C.line}`, background: "#fff", padding: "9px 18px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 500, color: C.ink, whiteSpace: "nowrap" }}>
               <UserIcon /> Sign In
             </button>
-            <button className="rean-desktop" onClick={() => nav("donate")} style={{ ...btnReset, display: "inline-block", background: C.forest, color: "#fff", padding: "10px 20px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 600 }}>
+            <button className="rean-desktop" onClick={() => nav("donate")} style={{ ...btnReset, display: "inline-block", background: C.forest, color: "#fff", padding: "10px 22px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
               Donate
             </button>
             <button className="rean-mobile" onClick={() => setMobileOpen(v => !v)} aria-label="Menu" style={{ ...btnReset, width: 44, height: 44, alignItems: "center", justifyContent: "center", color: C.ink }}>
@@ -231,7 +222,7 @@ function Burger({ open }) {
 }
 
 const btnReset = { background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", display: "flex" };
-const navLink = { ...btnReset, fontFamily: sans, fontSize: 15, fontWeight: 500, color: "rgba(32,39,31,.8)", padding: "8px 0" };
+const navLink = { ...btnReset, fontFamily: sans, fontSize: 15, fontWeight: 500, color: "rgba(32,39,31,.8)", padding: "8px 0", whiteSpace: "nowrap" };
 
 // ---- Homepage ----
 function Home({ go }) {
@@ -523,7 +514,7 @@ export default function App() {
         .rean-footer { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px; }
         .rean-scroll::-webkit-scrollbar { height: 0; }
         .rean-scroll { scrollbar-width: none; }
-        @media (max-width: 900px) {
+        @media (max-width: 1080px) {
           .rean-desktop { display: none !important; }
           .rean-mobile { display: flex !important; }
           .rean-hero-grid { grid-template-columns: 1fr; gap: 56px; }
