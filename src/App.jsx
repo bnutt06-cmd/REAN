@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from "react";
-
-/*
-  REAN — Rescuing European Animals in Need
-  A single-file React site: full homepage + lightweight placeholder pages.
-  Navigation is client-side (no router dependency) so it runs anywhere.
-
-  Design: warm paper background, forest green + amber pulled from the logo,
-  Fraunces (display serif) paired with a clean sans. The dogs lead.
-*/
+import { getDogListings } from "./lib/dogsApi";
 
 // ---- Brand tokens ----
 const C = {
@@ -27,17 +19,7 @@ const C = {
 const display = "'Fraunces', Georgia, serif";
 const sans = "'Inter', system-ui, -apple-system, sans-serif";
 
-// ---- Sample dog data (would come from a CMS later) ----
-const DOGS = [
-  { id: "luca", name: "Luca", age: "2 years", sex: "Male", size: "Medium", energy: "Steady", loc: "uk", locLabel: "In foster · Norfolk", blurb: "Found tied to a fence in midwinter, Luca now naps on the sofa and follows his foster mum room to room.", traits: ["Good with dogs", "House-trained", "Neutered"], hue: 28 },
-  { id: "mara", name: "Mara", age: "8 months", sex: "Female", size: "Small", energy: "Lively", loc: "romania", locLabel: "Sanctuary · Romania", blurb: "A bright, bouncy pup born in our sanctuary. She's never known the streets — she just needs a sofa to call her own.", traits: ["Good with kids", "Vaccinated", "Loves play"], hue: 42 },
-  { id: "bruno", name: "Bruno", age: "5 years", sex: "Male", size: "Large", energy: "Calm", loc: "romania", locLabel: "Sanctuary · Romania", blurb: "A gentle giant who waited three years for someone to notice him. Calm, soulful, and endlessly patient.", traits: ["Good with cats", "Neutered", "Gentle"], hue: 18 },
-  { id: "sasha", name: "Sasha", age: "3 years", sex: "Female", size: "Medium", energy: "Steady", loc: "uk", locLabel: "In foster · Cambridgeshire", blurb: "Shy at first, then your shadow forever. Sasha is learning that hands mean kindness, not fear.", traits: ["Needs quiet home", "Spayed", "Crate-trained"], hue: 36 },
-  { id: "teddy", name: "Teddy", age: "1 year", sex: "Male", size: "Small", energy: "Lively", loc: "romania", locLabel: "Sanctuary · Romania", blurb: "All ears and enthusiasm. Teddy greets every volunteer like they're the best thing he's ever seen.", traits: ["Good with dogs", "Vaccinated", "Playful"], hue: 48 },
-  { id: "willow", name: "Willow", age: "4 years", sex: "Female", size: "Medium", energy: "Calm", loc: "uk", locLabel: "In foster · Suffolk", blurb: "A quiet soul who loves slow walks and long naps in a sunbeam. Asks for very little, gives back everything.", traits: ["Good with cats", "Spayed", "Calm"], hue: 32 },
-];
-
-// ---- Placeholder dog portrait (deliberate, not broken) ----
+// ---- Placeholder dog portrait ----
 function DogPortrait({ hue = 30, style }) {
   const gid = "dp" + hue + Math.round((style?.h || 0) * 1000);
   const a = `hsl(${hue} 55% 78%)`;
@@ -64,7 +46,6 @@ function DogPortrait({ hue = 30, style }) {
   );
 }
 
-// ---- REAN logo mark (recreated as inline SVG) ----
 function Logo({ size = 44 }) {
   return (
     <img
@@ -92,7 +73,6 @@ const NAV = [
   { label: "Contact Us", page: "contact" },
 ];
 
-// ---- Header ----
 function Header({ go, current }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -128,7 +108,6 @@ function Header({ go, current }) {
             <span style={{ fontFamily: display, fontSize: 24, fontWeight: 600, color: C.ink, letterSpacing: "-0.01em" }}>REAN</span>
           </button>
 
-          {/* desktop nav */}
           <div className="rean-desktop" style={{ alignItems: "center", gap: 22 }}>
             {NAV.map((item) => item.children ? (
               <div key={item.label} style={{ position: "relative" }} onMouseEnter={() => setHover(item.label)} onMouseLeave={() => setHover(null)}>
@@ -173,7 +152,6 @@ function Header({ go, current }) {
         </nav>
       </header>
 
-      {/* mobile overlay */}
       <div className="rean-mobile" style={{
         position: "fixed", inset: 0, zIndex: 30, background: C.paper, paddingTop: 88,
         visibility: mobileOpen ? "visible" : "hidden", opacity: mobileOpen ? 1 : 0, transition: "all .3s",
@@ -204,9 +182,11 @@ function Header({ go, current }) {
   );
 }
 
-// ---- Icons ----
 function Chevron({ open, big }) {
   return <svg width={big ? 22 : 16} height={big ? 22 : 16} viewBox="0 0 16 16" fill="none" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s", color: big ? C.forest : "inherit" }}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+if (typeof window !== "undefined") {
+  window.Chevron = Chevron;
 }
 function UserIcon() {
   return <svg width={18} height={18} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.6" /><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
@@ -224,12 +204,10 @@ function Burger({ open }) {
 const btnReset = { background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", display: "flex" };
 const navLink = { ...btnReset, fontFamily: sans, fontSize: 15, fontWeight: 500, color: "rgba(32,39,31,.8)", padding: "8px 0", whiteSpace: "nowrap" };
 
-// ---- Homepage ----
-function Home({ go }) {
+function Home({ go, dogs, loading }) {
   const hueGrid = [28, 46, 18, 38];
   return (
     <main>
-      {/* Hero */}
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 20px 24px" }}>
         <div className="rean-hero-grid">
           <div>
@@ -244,29 +222,22 @@ function Home({ go }) {
               <button onClick={() => go("adopt")} style={ctaPrimary}>Meet the dogs</button>
               <button onClick={() => go("donate")} style={ctaSecondary}>Donate</button>
             </div>
-            <p style={{ fontFamily: sans, fontSize: 14, color: C.inkSoft, marginTop: 20 }}>Or text <strong style={{ color: C.ink }}>REAN</strong> to <strong style={{ color: C.ink }}>70191</strong> to give £10 in seconds.</p>
           </div>
-
-          <div style={{ position: "relative" }}>
+          <div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ display: "grid", gap: 16 }}>
-                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden", boxShadow: "0 14px 30px -14px rgba(31,74,40,.4)" }}><DogPortrait hue={hueGrid[0]} style={{ h: 1 }} /></div>
-                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden", boxShadow: "0 14px 30px -14px rgba(31,74,40,.4)" }}><DogPortrait hue={hueGrid[1]} style={{ h: 2 }} /></div>
+                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[0]} /></div>
+                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[1]} /></div>
               </div>
               <div style={{ display: "grid", gap: 16, paddingTop: 40 }}>
-                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden", boxShadow: "0 14px 30px -14px rgba(31,74,40,.4)" }}><DogPortrait hue={hueGrid[2]} style={{ h: 3 }} /></div>
-                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden", boxShadow: "0 14px 30px -14px rgba(31,74,40,.4)" }}><DogPortrait hue={hueGrid[3]} style={{ h: 4 }} /></div>
+                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[2]} /></div>
+                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[3]} /></div>
               </div>
-            </div>
-            <div style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 12, background: "#fff", border: `1px solid ${C.line}`, padding: "12px 20px", borderRadius: 18, boxShadow: "0 20px 40px -20px rgba(31,74,40,.5)", whiteSpace: "nowrap" }}>
-              <span style={{ fontFamily: display, fontSize: 30, fontWeight: 700, color: C.forest }}>3,000+</span>
-              <span style={{ fontFamily: sans, fontSize: 13, lineHeight: 1.2, color: C.inkSoft }}>dogs rescued<br />& re-homed</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
       <section style={{ borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}`, background: C.paperDeep, marginTop: 40 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
           {[["3,000+", "Dogs rescued & re-homed"], ["200+", "Dogs in our care right now"], ["2", "Sanctuaries in Romania"], ["2013", "Rescuing ever since"]].map(([n, l], i) => (
@@ -278,21 +249,25 @@ function Home({ go }) {
         </div>
       </section>
 
-      {/* Featured dogs */}
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: "64px 0" }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px", marginBottom: 24 }}>
           <div>
             <p style={eyebrow}>Waiting for you</p>
-            <h2 style={h2}>Dogs looking for a home</h2>
+            <h2 style={h2}>Latest Additions</h2>
           </div>
           <button onClick={() => go("adopt")} style={{ ...ctaSecondary, padding: "10px 18px", fontSize: 14 }}>See all →</button>
         </div>
-        <div className="rean-scroll" style={{ display: "flex", gap: 20, overflowX: "auto", padding: "4px 20px 16px" }}>
-          {DOGS.map((d) => <DogCard key={d.id} dog={d} go={go} />)}
-        </div>
+        {loading ? (
+          <p style={{ padding: "0 20px", color: C.inkSoft }}>Loading beautiful dogs...</p>
+        ) : dogs.length === 0 ? (
+          <p style={{ padding: "0 20px", color: C.inkSoft }}>No current available dogs listed yet.</p>
+        ) : (
+          <div className="rean-scroll" style={{ display: "flex", gap: 20, overflowX: "auto", padding: "4px 20px 16px" }}>
+            {dogs.map((d) => <DogCard key={d.id} dog={d} go={go} />)}
+          </div>
+        )}
       </section>
 
-      {/* Two paths */}
       <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px 72px" }}>
         <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto 48px" }}>
           <p style={eyebrow}>Two ways to adopt</p>
@@ -316,7 +291,6 @@ function Home({ go }) {
         </div>
       </section>
 
-      {/* Where your money goes */}
       <section style={{ background: C.forest, color: "#fff" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 20px" }}>
           <div className="rean-money">
@@ -349,7 +323,6 @@ function Home({ go }) {
         </div>
       </section>
 
-      {/* Closing CTA */}
       <section style={{ maxWidth: 760, margin: "0 auto", padding: "96px 20px", textAlign: "center" }}>
         <h2 style={{ fontFamily: display, fontSize: "clamp(1.9rem,5vw,3rem)", fontWeight: 600, lineHeight: 1.12, color: C.ink, margin: 0 }}>
           Can't adopt right now?<br /><span style={{ fontStyle: "italic", color: C.forest }}>There are other ways to help.</span>
@@ -365,26 +338,32 @@ function Home({ go }) {
 }
 
 function DogCard({ dog, go }) {
+  const isUk = dog.status.startsWith("uk");
   return (
     <button onClick={() => go("dog", dog.id)} style={{ ...btnReset, display: "block", textAlign: "left", width: 300, flexShrink: 0, border: `1px solid ${C.line}`, background: "#fff", borderRadius: 24, overflow: "hidden" }}>
-      <div style={{ position: "relative", aspectRatio: "4/5" }}>
-        <DogPortrait hue={dog.hue} />
-        <span style={{ position: "absolute", top: 14, left: 14, padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, fontFamily: sans, background: dog.loc === "uk" ? "rgba(47,107,58,.92)" : "rgba(240,169,43,.95)", color: dog.loc === "uk" ? "#fff" : C.ink, backdropFilter: "blur(4px)" }}>{dog.loc === "uk" ? "In the UK" : "In Romania"}</span>
+      <div style={{ position: "relative", aspectRatio: "4/5", background: C.paperDeep }}>
+        {dog.photo_urls?.[0] ? (
+          <img src={dog.photo_urls[0]} alt={dog.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <DogPortrait hue={28} />
+        )}
+        <span style={{ position: "absolute", top: 14, left: 14, padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, fontFamily: sans, background: isUk ? "rgba(47,107,58,.92)" : "rgba(240,169,43,.95)", color: isUk ? "#fff" : C.ink }}>
+          {isUk ? "In the UK" : "In Romania"}
+        </span>
       </div>
       <div style={{ padding: 20 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
           <h3 style={{ fontFamily: display, fontSize: 24, fontWeight: 600, color: C.ink, margin: 0 }}>{dog.name}</h3>
           <span style={{ fontFamily: sans, fontSize: 14, color: C.inkSoft }}>{dog.age}</span>
         </div>
-        <p style={{ fontFamily: sans, fontSize: 14, color: C.inkSoft, margin: "4px 0 0" }}>{dog.sex} · {dog.size} · {dog.energy}</p>
-        <p style={{ fontFamily: sans, fontSize: 14, lineHeight: 1.55, color: C.inkSoft, margin: "12px 0 0", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{dog.blurb}</p>
+        <p style={{ fontFamily: sans, fontSize: 14, color: C.inkSoft, margin: "4px 0 0", textTransform: "capitalize" }}>{dog.gender} · {dog.size}</p>
+        <p style={{ fontFamily: sans, fontSize: 14, lineHeight: 1.55, color: C.inkSoft, margin: "12px 0 0", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{dog.bio}</p>
         <span style={{ fontFamily: sans, fontSize: 14, fontWeight: 700, color: C.forest, marginTop: 16, display: "inline-block" }}>Meet {dog.name} →</span>
       </div>
     </button>
   );
 }
 
-// ---- Placeholder page shell ----
 function Placeholder({ title, eyebrowText, children, go }) {
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "72px 20px 96px", minHeight: "60vh" }}>
@@ -396,43 +375,78 @@ function Placeholder({ title, eyebrowText, children, go }) {
   );
 }
 
-function AdoptPage({ go, q }) {
+function AdoptPage({ go, q, dogs, loading }) {
   const [filter, setFilter] = useState(q || "all");
   useEffect(() => { if (q) setFilter(q); }, [q]);
-  const shown = DOGS.filter((d) => filter === "all" ? true : d.loc === filter);
+
+  const shown = dogs.filter((d) => {
+    if (filter === "all") return true;
+    if (filter === "uk") return d.status.startsWith("uk");
+    if (filter === "romania") return d.status === "romania";
+    return true;
+  });
+
   return (
     <main style={{ maxWidth: 1200, margin: "0 auto", padding: "56px 20px 96px" }}>
       <p style={eyebrow}>Adopt a dog</p>
-      <h1 style={{ fontFamily: display, fontSize: "clamp(2.2rem,5vw,3.2rem)", fontWeight: 600, color: C.ink, margin: "8px 0 0", lineHeight: 1.1 }}>Find your new best friend</h1>
-      <p style={{ fontFamily: sans, fontSize: 17, color: C.inkSoft, maxWidth: 560, marginTop: 16, lineHeight: 1.6 }}>Some of our dogs are already in the UK in foster care; most are waiting in Romania for a home to come to. Filtering and full profiles are a placeholder for now.</p>
+      <h1 style={{ fontFamily: display, fontSize: "clamp(2.2rem,5vw,3.2rem)", fontWeight: 600, color: C.ink, margin: "8px 0 0" }}>Find your new best friend</h1>
       <div style={{ display: "flex", gap: 10, marginTop: 28, flexWrap: "wrap" }}>
-        {[["all", "All dogs"], ["uk", "In the UK"], ["romania", "In Romania"]].map(([k, l]) => (
+        {[["all", "All available"], ["uk", "In the UK"], ["romania", "In Romania"]].map(([k, l]) => (
           <button key={k} onClick={() => setFilter(k)} style={{ ...btnReset, display: "inline-block", padding: "9px 18px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 600, border: `1px solid ${filter === k ? C.forest : C.line}`, background: filter === k ? C.forest : "#fff", color: filter === k ? "#fff" : C.ink }}>{l}</button>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, marginTop: 36 }}>
-        {shown.map((d) => <DogCard key={d.id} dog={d} go={go} />)}
-      </div>
+      {loading ? (
+        <p style={{ marginTop: 36, color: C.inkSoft }}>Retrieving records...</p>
+      ) : shown.length === 0 ? (
+        <p style={{ marginTop: 36, color: C.inkSoft }}>No matching dogs currently listed.</p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, marginTop: 36 }}>
+          {shown.map((d) => <DogCard key={d.id} dog={d} go={go} />)}
+        </div>
+      )}
     </main>
   );
 }
 
-function DogProfile({ go, id }) {
-  const dog = DOGS.find((d) => d.id === id) || DOGS[0];
+function DogProfile({ go, id, dogs }) {
+  const dog = dogs.find((d) => d.id === id);
+  if (!dog) return <p style={{ padding: 40 }}>Finding profile records...</p>;
+
+  const traits = [];
+  if (dog.good_with_dogs) traits.push("Good with dogs");
+  if (dog.good_with_cats) traits.push("Good with cats");
+  if (dog.good_with_kids) traits.push("Good with kids");
+  if (dog.neutered) traits.push("Neutered / Spayed");
+  if (dog.vaccinated) traits.push("Vaccinated");
+
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px 96px" }}>
       <button onClick={() => go("adopt")} style={{ ...btnReset, fontFamily: sans, fontSize: 14, fontWeight: 600, color: C.forest, marginBottom: 24 }}>← All dogs</button>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 40, alignItems: "start" }} className="rean-profile">
-        <div style={{ borderRadius: 28, overflow: "hidden", aspectRatio: "4/5", boxShadow: "0 20px 40px -20px rgba(31,74,40,.4)" }}><DogPortrait hue={dog.hue} /></div>
-        <div>
-          <span style={{ fontFamily: sans, fontSize: 12, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: dog.loc === "uk" ? C.forest : C.amberDeep }}>{dog.locLabel}</span>
-          <h1 style={{ fontFamily: display, fontSize: "clamp(2.4rem,6vw,3.6rem)", fontWeight: 600, color: C.ink, margin: "6px 0 0", lineHeight: 1 }}>{dog.name}</h1>
-          <p style={{ fontFamily: sans, fontSize: 16, color: C.inkSoft, margin: "12px 0 0" }}>{dog.sex} · {dog.age} · {dog.size} · {dog.energy} energy</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
-            {dog.traits.map((t) => <span key={t} style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.forestDeep, background: C.paperDeep, border: `1px solid ${C.line}`, padding: "6px 14px", borderRadius: 999 }}>{t}</span>)}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "start" }} className="rean-profile">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ borderRadius: 28, overflow: "hidden", aspectRatio: "4/5", boxShadow: "0 20px 40px -20px rgba(31,74,40,.4)", background: C.paperDeep }}>
+            {dog.photo_urls?.[0] ? <img src={dog.photo_urls[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DogPortrait hue={30} />}
           </div>
-          <p style={{ fontFamily: sans, fontSize: 17, lineHeight: 1.7, color: C.ink, marginTop: 24 }}>{dog.blurb}</p>
-          <p style={{ fontFamily: sans, fontSize: 15, lineHeight: 1.7, color: C.inkSoft, marginTop: 12 }}>A full image gallery, detailed bio, and the adoption inquiry form will live here. This is a placeholder profile.</p>
+          {dog.photo_urls && dog.photo_urls.length > 1 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+              {dog.photo_urls.slice(1).map((url, i) => (
+                <div key={i} style={{ aspectRatio: "1", borderRadius: 12, overflow: "hidden", border: `1px solid ${C.line}` }}>
+                  <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div>
+          <span style={{ fontFamily: sans, fontSize: 12, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: C.forest }}>
+            {dog.status.replace("_", " ")}
+          </span>
+          <h1 style={{ fontFamily: display, fontSize: "clamp(2.4rem,6vw,3.6rem)", fontWeight: 600, color: C.ink, margin: "6px 0 0", lineHeight: 1 }}>{dog.name}</h1>
+          <p style={{ fontFamily: sans, fontSize: 16, color: C.inkSoft, margin: "12px 0 0", textTransform: "capitalize" }}>{dog.gender} · {dog.age} · {dog.size}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
+            {traits.map((t) => <span key={t} style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: C.forestDeep, background: C.paperDeep, border: `1px solid ${C.line}`, padding: "6px 14px", borderRadius: 999 }}>{t}</span>)}
+          </div>
+          <p style={{ fontFamily: sans, fontSize: 17, lineHeight: 1.7, color: C.ink, marginTop: 24, whiteSpace: "pre-wrap" }}>{dog.bio}</p>
           <button onClick={() => go("contact")} style={{ ...ctaPrimary, marginTop: 28 }}>Apply to adopt {dog.name}</button>
         </div>
       </div>
@@ -440,7 +454,6 @@ function DogProfile({ go, id }) {
   );
 }
 
-// ---- Footer ----
 function Footer({ go }) {
   const col = (title, links) => (
     <div>
@@ -474,28 +487,66 @@ function Footer({ go }) {
   );
 }
 
-// ---- Shared style objects ----
 const pill = { display: "inline-flex", alignItems: "center", gap: 8, border: `1px solid ${C.line}`, background: "#fff", padding: "6px 16px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 500, color: C.forest };
 const ctaPrimary = { ...btnReset, display: "inline-block", background: C.forest, color: "#fff", padding: "14px 28px", borderRadius: 999, fontFamily: sans, fontSize: 16, fontWeight: 600 };
 const ctaSecondary = { ...btnReset, display: "inline-block", background: "#fff", color: C.ink, padding: "14px 28px", borderRadius: 999, fontFamily: sans, fontSize: 16, fontWeight: 600, border: `1px solid ${C.line}` };
 const eyebrow = { fontFamily: sans, fontSize: 13, fontWeight: 700, letterSpacing: ".18em", textTransform: "uppercase", color: C.forest, margin: 0 };
 const h2 = { fontFamily: display, fontSize: "clamp(1.8rem,4vw,2.4rem)", fontWeight: 600, color: C.ink, margin: "8px 0 0", lineHeight: 1.1 };
 
-// ---- App shell with routing + responsive CSS ----
 export default function App() {
   const [page, setPage] = useState("home");
   const [param, setParam] = useState(null);
+  const [liveDogs, setLiveDogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const go = (p, x) => { setPage(p); setParam(x || null); window.scrollTo({ top: 0, behavior: "auto" }); };
 
+  useEffect(() => {
+    async function fetchPublicDogs() {
+      try {
+        const listings = await getDogListings();
+        setLiveDogs(listings);
+      } catch (err) {
+        console.error("Error loading public dogs:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPublicDogs();
+  }, []);
+
+  const availableDogs = liveDogs.filter(d => d.status !== "adopted");
+  const adoptedDogs = liveDogs.filter(d => d.status === "adopted");
+
   const pages = {
-    home: <Home go={go} />,
-    adopt: <AdoptPage go={go} q={param} />,
-    dog: <DogProfile go={go} id={param} />,
-    happy: <Placeholder go={go} eyebrowText="Happy Homes" title="Happy tails, forever homes">Stories and photos of REAN dogs settled into their new families will live here — consolidated from the old Happy Homes pages into one warm, scrollable gallery.</Placeholder>,
+    home: <Home go={go} dogs={availableDogs.slice(0, 4)} loading={loading} />,
+    adopt: <AdoptPage go={go} q={param} dogs={availableDogs} loading={loading} />,
+    dog: <DogProfile go={go} id={param} dogs={liveDogs} />,
+    happy: <Placeholder go={go} eyebrowText="Happy Homes" title="Happy tails, forever homes">
+      <p style={{ marginBottom: 20 }}>Stories and photos of REAN dogs settled into their new families will live here.</p>
+      {loading ? (
+        <p>Loading adopted stories...</p>
+      ) : adoptedDogs.length === 0 ? (
+        <p>No adopted stories posted yet. Check back soon!</p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, marginTop: 24 }}>
+          {adoptedDogs.map((d) => (
+            <div key={d.id} style={{ border: `1px solid ${C.line}`, background: "#fff", borderRadius: 24, overflow: "hidden", padding: 20 }}>
+              <div style={{ aspectRatio: "4/3", borderRadius: 16, overflow: "hidden", background: C.paper, marginBottom: 12 }}>
+                {d.photo_urls?.[0] ? <img src={d.photo_urls[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DogPortrait hue={30} />}
+              </div>
+              <h3 style={{ fontFamily: display, fontSize: 22, fontWeight: 600, color: C.ink, margin: 0 }}>{d.name}</h3>
+              <p style={{ fontFamily: sans, fontSize: 14, color: C.inkSoft, marginTop: 4 }}>{d.age} • Fully Rehomed 🎉</p>
+              <p style={{ fontFamily: sans, fontSize: 14, lineHeight: 1.5, color: C.inkSoft, marginTop: 8 }}>{d.bio}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </Placeholder>,
     donate: <Placeholder go={go} eyebrowText="Support us" title="Help us bring them home"><p>Every donation goes straight to the dogs: vet care, transport, and daily food and shelter.</p><p style={{ marginTop: 16 }}><strong style={{ color: C.ink }}>Text to donate:</strong> Text REAN to 70191 (£10), REAN2 (£20), or REAN3 (£30).</p><p style={{ marginTop: 16 }}><strong style={{ color: C.ink }}>Standing order:</strong> Sort code 60-05-33, Account 23491086.</p><p style={{ marginTop: 16 }}>PayPal and debit/credit card options will be wired up here.</p></Placeholder>,
     news: <Placeholder go={go} eyebrowText="REAN News" title="The latest from the rescue">Updates from our sanctuaries, transport days, and rescue stories. The blog feed is a placeholder for now.</Placeholder>,
-    contact: <Placeholder go={go} eyebrowText="Contact us" title="Get in touch"><p>Whether you want to adopt, foster, or donate supplies, we'd love to hear from you.</p><p style={{ marginTop: 16 }}>Email: <strong style={{ color: C.ink }}>reanrescue@outlook.com</strong></p><p style={{ marginTop: 16 }}>The adoption inquiry and contact forms will be added here, with validation and spam protection.</p></Placeholder>,
-    signin: <Placeholder go={go} eyebrowText="Account" title="Sign in">The sign-in screen and admin dashboard login will live here. Logged-in admins will manage dogs and site content; the header swaps the Sign In button for an account menu.</Placeholder>,
+    contact: <Placeholder go={go} eyebrowText="Contact us" title="Get in touch"><p>Whether you want to adopt, foster, or donate supplies, we'd love to hear from you.</p><p style={{ marginTop: 16 }}>Email: <strong style={{ color: C.ink }}>reanrescue@outlook.com</strong></p></Placeholder>,
+    signin: <Placeholder go={go} eyebrowText="Account" title="Sign in"><p>To manage dog listings, visit the dashboard page directly:</p><button onClick={() => window.location.pathname = "/admin"} style={{ ...ctaPrimary, marginTop: 16 }}>Go to Admin Panel →</button></Placeholder>,
     privacy: <Placeholder go={go} eyebrowText="Legal" title="Privacy policy">Placeholder for REAN's privacy policy.</Placeholder>,
     terms: <Placeholder go={go} eyebrowText="Legal" title="Terms">Placeholder for REAN's terms.</Placeholder>,
   };
@@ -523,9 +574,7 @@ export default function App() {
           .rean-footer { grid-template-columns: 1fr 1fr; gap: 32px; }
           .rean-profile { grid-template-columns: 1fr !important; }
         }
-        @media (max-width: 560px) {
-          .rean-footer { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 560px) { .rean-footer { grid-template-columns: 1fr; } }
       `}</style>
       <Header go={go} current={page} />
       {pages[page]}

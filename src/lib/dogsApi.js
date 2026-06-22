@@ -4,13 +4,8 @@ const BUCKET = "dog-photos";
 
 /**
  * Upload a single image file to Supabase Storage and return its public URL.
- *
- * @param {File} file - the image file from a file input
- * @returns {Promise<string>} the public URL of the uploaded image
  */
 export async function uploadDogPhoto(file) {
-  // Build a unique, collision-safe path. Keep the original extension so the
-  // browser serves the right content type.
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const fileName = `${crypto.randomUUID()}.${ext}`;
   const filePath = `dogs/${fileName}`;
@@ -27,9 +22,7 @@ export async function uploadDogPhoto(file) {
     throw new Error(`Could not upload "${file.name}": ${uploadError.message}`);
   }
 
-  // Retrieve the public URL for the stored object.
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-
   if (!data?.publicUrl) {
     throw new Error(`Uploaded "${file.name}" but could not get its public URL.`);
   }
@@ -38,13 +31,7 @@ export async function uploadDogPhoto(file) {
 }
 
 /**
- * Upload several images, one after another, returning all their public URLs.
- * Sequential (not parallel) so a slow connection can't fire dozens of
- * simultaneous uploads, and so progress can be reported per-file.
- *
- * @param {File[]} files
- * @param {(done: number, total: number) => void} [onProgress]
- * @returns {Promise<string[]>}
+ * Upload multiple images sequentially
  */
 export async function uploadDogPhotos(files, onProgress) {
   const urls = [];
@@ -57,37 +44,44 @@ export async function uploadDogPhotos(files, onProgress) {
 }
 
 /**
- * Create a dog listing: upload its photos, then insert the row.
- *
- * @param {object} dog - the form values
- * @param {File[]} photoFiles - selected image files
- * @param {(done: number, total: number) => void} [onUploadProgress]
- * @returns {Promise<object>} the inserted row
+ * Fetch all dog listings, sorted newest first
+ */
+export async function getDogListings() {
+  const { data, error } = await supabase
+    .from("dogs")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Could not fetch dogs: ${error.message}`);
+  }
+  return data;
+}
+
+/**
+ * Create a new dog listing
  */
 export async function createDogListing(dog, photoFiles, onUploadProgress) {
-  // 1. Upload any photos first and collect their public URLs.
   let photoUrls = [];
   if (photoFiles && photoFiles.length > 0) {
     photoUrls = await uploadDogPhotos(photoFiles, onUploadProgress);
   }
 
-  // 2. Shape the row to match the `dogs` table columns.
   const row = {
     name: dog.name.trim(),
-    status: dog.status, // 'romania' | 'uk_foster' | 'uk_kennels' | 'adopted'
+    status: dog.status,
     age: dog.age.trim(),
-    size: dog.size, // 'small' | 'medium' | 'large'
-    gender: dog.gender, // 'male' | 'female'
+    size: dog.size,
+    gender: dog.gender,
     bio: dog.bio.trim(),
     good_with_dogs: !!dog.goodWithDogs,
     good_with_cats: !!dog.goodWithCats,
     good_with_kids: !!dog.goodWithKids,
     neutered: !!dog.neutered,
     vaccinated: !!dog.vaccinated,
-    photo_urls: photoUrls, // stored as a text[] / jsonb column
+    photo_urls: photoUrls,
   };
 
-  // 3. Insert and return the created record.
   const { data, error } = await supabase
     .from("dogs")
     .insert(row)
@@ -97,6 +91,59 @@ export async function createDogListing(dog, photoFiles, onUploadProgress) {
   if (error) {
     throw new Error(`Could not save the listing: ${error.message}`);
   }
-
   return data;
+}
+
+/**
+ * Update an existing dog listing
+ */
+export async function updateDogListing(id, dog, newPhotoFiles, existingUrls = [], onUploadProgress) {
+  let finalUrls = [...existingUrls];
+  
+  if (newPhotoFiles && newPhotoFiles.length > 0) {
+    const freshUrls = await uploadDogPhotos(newPhotoFiles, onUploadProgress);
+    finalUrls = [...finalUrls, ...freshUrls];
+  }
+
+  const row = {
+    name: dog.name.trim(),
+    status: dog.status,
+    age: dog.age.trim(),
+    size: dog.size,
+    gender: dog.gender,
+    bio: dog.bio.trim(),
+    good_with_dogs: !!dog.goodWithDogs,
+    good_with_cats: !!dog.goodWithCats,
+    good_with_kids: !!dog.goodWithKids,
+    neutered: !!dog.neutered,
+    vaccinated: !!dog.vaccinated,
+    photo_urls: finalUrls,
+  };
+
+  const { data, error } = await supabase
+    .from("dogs")
+    .update(row)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Could not update the listing: ${error.message}`);
+  }
+  return data;
+}
+
+/**
+ * Delete a dog listing
+ */
+export async function deleteDogListing(id) {
+  const { error } = await supabase
+    .from("dogs")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Could not delete the listing: ${error.message}`);
+  }
+  return true;
 }
