@@ -58,7 +58,10 @@ export default function Dashboard({ session }) {
             <div style={{ fontSize: 12, color: C.inkSoft, marginTop: 2 }}>{session?.user?.email}</div>
           </div>
         </div>
-        <button onClick={signOut} style={signOutBtn}>Sign out</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <a href="/" style={{ ...signOutBtn, textDecoration: "none", display: "inline-block" }}>View site ↗</a>
+          <button onClick={signOut} style={signOutBtn}>Sign out</button>
+        </div>
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 20px 80px" }}>

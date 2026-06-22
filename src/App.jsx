@@ -46,6 +46,22 @@ function DogPortrait({ hue = 30, style }) {
   );
 }
 
+// Hero photo with graceful fallback to the SVG placeholder if the file
+// isn't present yet (or fails to load). Drop real photos into /public as
+// hero-1.jpg … hero-4.jpg and they appear automatically.
+function HeroImage({ src, hue }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <DogPortrait hue={hue} />;
+  return (
+    <img
+      src={src}
+      alt="A rescued REAN dog"
+      onError={() => setFailed(true)}
+      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+    />
+  );
+}
+
 function Logo({ size = 44 }) {
   return (
     <img
@@ -86,6 +102,7 @@ function Header({ go, current }) {
   }, []);
 
   const nav = (page, q) => { go(page, q); setMobileOpen(false); setOpenAcc(null); };
+  const goAdmin = () => { setMobileOpen(false); window.location.href = "/admin"; };
 
   return (
     <>
@@ -139,8 +156,8 @@ function Header({ go, current }) {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <button className="rean-desktop" onClick={() => nav("signin")} style={{ ...btnReset, alignItems: "center", gap: 8, border: `1px solid ${C.line}`, background: "#fff", padding: "9px 18px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 500, color: C.ink, whiteSpace: "nowrap" }}>
-              <UserIcon /> Sign In
+            <button className="rean-desktop" onClick={goAdmin} style={{ ...btnReset, alignItems: "center", gap: 8, border: `1px solid ${C.line}`, background: "#fff", padding: "9px 18px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 500, color: C.ink, whiteSpace: "nowrap" }}>
+              <UserIcon /> Staff Login
             </button>
             <button className="rean-desktop" onClick={() => nav("donate")} style={{ ...btnReset, display: "inline-block", background: C.forest, color: "#fff", padding: "10px 22px", borderRadius: 999, fontFamily: sans, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
               Donate
@@ -175,7 +192,7 @@ function Header({ go, current }) {
             <button key={item.label} onClick={() => nav(item.page)} style={{ ...btnReset, display: "block", width: "100%", textAlign: "left", padding: "20px 0", borderBottom: `1px solid ${C.line}99`, fontFamily: display, fontSize: 24, color: C.ink }}>{item.label}</button>
           ))}
           <button onClick={() => nav("donate")} style={{ ...btnReset, display: "block", width: "100%", marginTop: 28, background: C.forest, color: "#fff", padding: "16px", borderRadius: 999, fontFamily: sans, fontSize: 16, fontWeight: 600, textAlign: "center" }}>Donate</button>
-          <button onClick={() => nav("signin")} style={{ ...btnReset, display: "flex", width: "100%", marginTop: 12, justifyContent: "center", alignItems: "center", gap: 8, border: `1px solid ${C.line}`, background: "#fff", padding: "16px", borderRadius: 999, fontFamily: sans, fontSize: 16, fontWeight: 500, color: C.ink }}><UserIcon /> Sign In</button>
+          <button onClick={goAdmin} style={{ ...btnReset, display: "flex", width: "100%", marginTop: 12, justifyContent: "center", alignItems: "center", gap: 8, border: `1px solid ${C.line}`, background: "#fff", padding: "16px", borderRadius: 999, fontFamily: sans, fontSize: 16, fontWeight: 500, color: C.ink }}><UserIcon /> Staff Login</button>
         </div>
       </div>
     </>
@@ -184,9 +201,6 @@ function Header({ go, current }) {
 
 function Chevron({ open, big }) {
   return <svg width={big ? 22 : 16} height={big ? 22 : 16} viewBox="0 0 16 16" fill="none" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s", color: big ? C.forest : "inherit" }}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-if (typeof window !== "undefined") {
-  window.Chevron = Chevron;
 }
 function UserIcon() {
   return <svg width={18} height={18} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.6" /><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
@@ -226,12 +240,12 @@ function Home({ go, dogs, loading }) {
           <div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ display: "grid", gap: 16 }}>
-                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[0]} /></div>
-                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[1]} /></div>
+                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden" }}><HeroImage src="/hero-1.jpg" hue={hueGrid[0]} /></div>
+                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden" }}><HeroImage src="/hero-2.jpg" hue={hueGrid[1]} /></div>
               </div>
               <div style={{ display: "grid", gap: 16, paddingTop: 40 }}>
-                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[2]} /></div>
-                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden" }}><DogPortrait hue={hueGrid[3]} /></div>
+                <div style={{ aspectRatio: "1", borderRadius: 28, overflow: "hidden" }}><HeroImage src="/hero-3.jpg" hue={hueGrid[2]} /></div>
+                <div style={{ aspectRatio: "3/4", borderRadius: 28, overflow: "hidden" }}><HeroImage src="/hero-4.jpg" hue={hueGrid[3]} /></div>
               </div>
             </div>
           </div>
@@ -338,7 +352,7 @@ function Home({ go, dogs, loading }) {
 }
 
 function DogCard({ dog, go }) {
-  const isUk = dog.status.startsWith("uk");
+  const isUk = (dog.status || "").startsWith("uk");
   return (
     <button onClick={() => go("dog", dog.id)} style={{ ...btnReset, display: "block", textAlign: "left", width: 300, flexShrink: 0, border: `1px solid ${C.line}`, background: "#fff", borderRadius: 24, overflow: "hidden" }}>
       <div style={{ position: "relative", aspectRatio: "4/5", background: C.paperDeep }}>
@@ -381,7 +395,7 @@ function AdoptPage({ go, q, dogs, loading }) {
 
   const shown = dogs.filter((d) => {
     if (filter === "all") return true;
-    if (filter === "uk") return d.status.startsWith("uk");
+    if (filter === "uk") return (d.status || "").startsWith("uk");
     if (filter === "romania") return d.status === "romania";
     return true;
   });
@@ -439,7 +453,7 @@ function DogProfile({ go, id, dogs }) {
         </div>
         <div>
           <span style={{ fontFamily: sans, fontSize: 12, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: C.forest }}>
-            {dog.status.replace("_", " ")}
+            {(dog.status || "").replace("_", " ")}
           </span>
           <h1 style={{ fontFamily: display, fontSize: "clamp(2.4rem,6vw,3.6rem)", fontWeight: 600, color: C.ink, margin: "6px 0 0", lineHeight: 1 }}>{dog.name}</h1>
           <p style={{ fontFamily: sans, fontSize: 16, color: C.inkSoft, margin: "12px 0 0", textTransform: "capitalize" }}>{dog.gender} · {dog.age} · {dog.size}</p>
@@ -480,7 +494,7 @@ function Footer({ go }) {
         </div>
         <div style={{ borderTop: "1px solid rgba(247,244,236,.15)", marginTop: 56, paddingTop: 24, display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", fontFamily: sans, fontSize: 13.5, color: "rgba(247,244,236,.6)" }}>
           <span>© {new Date().getFullYear()} REAN — Rescuing European Animals in Need. Registered charity.</span>
-          <div style={{ display: "flex", gap: 24 }}><button onClick={() => go("privacy")} style={{ ...btnReset, color: "inherit", fontFamily: sans, fontSize: 13.5 }}>Privacy</button><button onClick={() => go("terms")} style={{ ...btnReset, color: "inherit", fontFamily: sans, fontSize: 13.5 }}>Terms</button></div>
+          <div style={{ display: "flex", gap: 24 }}><button onClick={() => go("privacy")} style={{ ...btnReset, color: "inherit", fontFamily: sans, fontSize: 13.5 }}>Privacy</button><button onClick={() => go("terms")} style={{ ...btnReset, color: "inherit", fontFamily: sans, fontSize: 13.5 }}>Terms</button><a href="/admin" style={{ color: "inherit", fontFamily: sans, fontSize: 13.5, textDecoration: "none" }}>Staff Login</a></div>
         </div>
       </div>
     </footer>

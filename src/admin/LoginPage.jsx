@@ -74,6 +74,10 @@ export default function LoginPage() {
             {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
+
+        <a href="/" style={{ display: "block", textAlign: "center", marginTop: 20, fontFamily: sans, fontSize: 14, color: C.inkSoft, textDecoration: "none" }}>
+          ← Back to the main site
+        </a>
       </div>
     </div>
   );
